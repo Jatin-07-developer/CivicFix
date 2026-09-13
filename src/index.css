@@ -1,7 +1,33 @@
+/* ── Google Font ─────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+
+/* ── Base transitions for theme switching ───────────────────────────────── */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 250ms;
+  transition-timing-function: ease;
+}
+
+/* But never transition layout properties */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+}
+
+html {
+  font-family: 'Inter', system-ui, sans-serif;
+  scroll-behavior: smooth;
+}
+
+/* ── Leaflet overrides ───────────────────────────────────────────────────── */
 .custom-pin {
   background: transparent !important;
   border: none !important;
@@ -14,9 +40,111 @@
 
 .leaflet-popup-content-wrapper {
   border-radius: 12px !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15) !important;
+}
+
+.dark .leaflet-popup-content-wrapper {
+  background: #1e293b !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+}
+
+.dark .leaflet-popup-content {
+  color: #e2e8f0 !important;
+}
+
+.dark .leaflet-popup-tip {
+  background: #1e293b !important;
 }
 
 .leaflet-container {
   font-family: inherit !important;
+}
+
+/* ── Shimmer gradient animation ──────────────────────────────────────────── */
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    #14b8a6 0%,
+    #06b6d4 25%,
+    #14b8a6 50%,
+    #06b6d4 75%,
+    #14b8a6 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+
+/* ── Activity ticker ────────────────────────────────────────────────────── */
+.ticker-wrap {
+  overflow: hidden;
+  white-space: nowrap;
+}
+.ticker-track {
+  display: inline-flex;
+  animation: ticker 40s linear infinite;
+}
+.ticker-wrap:hover .ticker-track {
+  animation-play-state: paused;
+}
+
+/* ── Glassmorphism card ─────────────────────────────────────────────────── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* ── Stat counter animation ─────────────────────────────────────────────── */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Custom scrollbar (dark mode) ───────────────────────────────────────── */
+.dark ::-webkit-scrollbar {
+  width: 6px;
+}
+.dark ::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* ── Glow effects ───────────────────────────────────────────────────────── */
+.glow-teal {
+  box-shadow: 0 0 30px rgba(20, 184, 166, 0.3), 0 0 60px rgba(20, 184, 166, 0.1);
+}
+
+.text-gradient-teal {
+  background: linear-gradient(135deg, #14b8a6, #06b6d4, #38bdf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Hide no-JS fallback ────────────────────────────────────────────────── */
+.no-js-dark { display: none; }
+
+/* ── Theme toggle button ────────────────────────────────────────────────── */
+.theme-toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+/* Dark mode leaflet tile fix */
+.dark .leaflet-tile {
+  filter: brightness(0.8) saturate(0.7);
 }

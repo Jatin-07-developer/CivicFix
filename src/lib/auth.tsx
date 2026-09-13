@@ -1,12 +1,13 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { supabase, type UserRole } from '@/lib/supabase';
 
 interface AuthContextValue {
   session: Session | null;
   loading: boolean;
+  userRole: UserRole | null;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, role?: UserRole) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -32,13 +33,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  /** Extract role from user_metadata — defaults to municipal_staff */
+  const userRole: UserRole | null = session
+    ? ((session.user.user_metadata?.role as UserRole) ?? 'municipal_staff')
+    : null;
+
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error?.message ?? null };
   };
 
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
+  const signUp = async (email: string, password: string, role: UserRole = 'municipal_staff') => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { role },
+      },
+    });
     return { error: error?.message ?? null };
   };
 
@@ -47,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ session, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ session, loading, userRole, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

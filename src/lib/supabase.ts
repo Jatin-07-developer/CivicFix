@@ -10,6 +10,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
+// ─── Enums / Union Types ───────────────────────────────────────────────────────
+
 export type IssueType =
   | 'Pothole'
   | 'Garbage'
@@ -27,6 +29,25 @@ export type ReportStatus =
 
 export type Severity = 'Low' | 'Medium' | 'High';
 
+export type UserRole =
+  | 'municipal_staff'
+  | 'ward_officer'
+  | 'department_head'
+  | 'elected_rep'
+  | 'volunteer'
+  | 'admin';
+
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  municipal_staff: 'Municipal Staff',
+  ward_officer: 'Ward Officer',
+  department_head: 'Department Head',
+  elected_rep: 'Elected Representative',
+  volunteer: 'Volunteer / NGO',
+  admin: 'Admin',
+};
+
+// ─── Interfaces ────────────────────────────────────────────────────────────────
+
 export interface Report {
   id: string;
   tracking_id: string;
@@ -41,8 +62,29 @@ export interface Report {
   priority_score: number;
   department: string;
   duplicate_count: number;
+  upvote_count: number;
+  contact_email: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface StatusHistory {
+  id: string;
+  report_id: string;
+  old_status: string | null;
+  new_status: string;
+  changed_by: string | null;
+  note: string | null;
+  created_at: string;
+}
+
+export interface Escalation {
+  id: string;
+  report_id: string;
+  escalated_to: string;
+  reason: string;
+  escalated_by: string | null;
+  created_at: string;
 }
 
 export interface DuplicateMatch {
@@ -50,6 +92,8 @@ export interface DuplicateMatch {
   tracking_id: string;
   duplicate_count: number;
 }
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 export const ISSUE_TYPES: IssueType[] = [
   'Pothole',
@@ -108,3 +152,43 @@ export const SEVERITY_COLORS: Record<Severity, string> = {
   Medium: '#f59e0b',
   High: '#ef4444',
 };
+
+// ─── SLA Helpers ──────────────────────────────────────────────────────────────
+
+/** SLA resolution deadline in days per severity */
+export const SLA_DAYS: Record<Severity, number> = {
+  Low: 30,
+  Medium: 14,
+  High: 7,
+};
+
+/** Returns the SLA deadline Date for a given report */
+export function getSLADeadline(report: Pick<Report, 'created_at' | 'severity'>): Date {
+  const created = new Date(report.created_at);
+  const days = SLA_DAYS[report.severity] ?? 14;
+  return new Date(created.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
+/** Returns remaining hours until SLA breach (negative = already overdue) */
+export function getSLAHoursRemaining(report: Pick<Report, 'created_at' | 'severity'>): number {
+  const deadline = getSLADeadline(report);
+  return (deadline.getTime() - Date.now()) / (1000 * 60 * 60);
+}
+
+/** Returns true if report has breached SLA */
+export function isOverdue(report: Pick<Report, 'created_at' | 'severity' | 'status'>): boolean {
+  if (report.status === 'Resolved' || report.status === 'Verified') return false;
+  return getSLAHoursRemaining(report) < 0;
+}
+
+/** Human-readable SLA status label */
+export function getSLALabel(report: Pick<Report, 'created_at' | 'severity' | 'status'>): string {
+  if (report.status === 'Resolved' || report.status === 'Verified') return 'Resolved';
+  const hours = getSLAHoursRemaining(report);
+  if (hours < 0) {
+    const days = Math.abs(Math.floor(hours / 24));
+    return `${days}d overdue`;
+  }
+  if (hours < 24) return `${Math.floor(hours)}h left`;
+  return `${Math.floor(hours / 24)}d left`;
+}
